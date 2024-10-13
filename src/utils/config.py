@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
+    MONGO_URI=os.getenv('MONGO_URI')
+    MONGO_DATA_BASE=os.getenv('MONGO_DATA_BASE')
     BINANCE_API_KEY=os.getenv('BINANCE_API_KEY')
     BINANCE_SECRET_KEY=os.getenv('BINANCE_SECRET_KEY')
     EXCHANGE_API_BASE_UR=os.getenv('EXCHANGE_API_BASE_URL')

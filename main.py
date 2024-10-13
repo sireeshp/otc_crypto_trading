@@ -1,9 +1,10 @@
-from src.data.fetch_data import fetch_historical_data, fetch_ticker
+import asyncio
+from src.data.fetch_data import price_engine
 
-def main():
-    ticker_data = fetch_ticker()
+async def main():
+    ticker_data = await price_engine()
     print(ticker_data)
     
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
 
