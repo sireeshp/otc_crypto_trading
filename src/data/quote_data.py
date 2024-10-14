@@ -141,12 +141,12 @@ async def get_order_book_model(exchange, symbol) -> OrderBookData:
     )
 
 
-async def price_engine(symbol="BTC/USD") -> PriceEngineData:
+async def aggregated_market_data(symbol="BTC/USD") -> PriceEngineData:
     best_bid = None
     best_ask = None
     best_bid_exchange = None
     best_ask_exchange = None
-    exchange_data = []
+    exchange_data :List[OrderBookData] = []
     try:
         exchanges = await get_exchange_keys()
         for api_keys in exchanges:
@@ -162,7 +162,7 @@ async def price_engine(symbol="BTC/USD") -> PriceEngineData:
                     best_ask_exchange = api_keys.exchange_name
 
                 exchange_data.append(book)
-
+        exchange_data = sorted(exchange_data,key=lambda x:x.top_bid[0],reverse=True)
         return PriceEngineData(
             best_bid=BestPriceData(price=best_bid, exchange=best_bid_exchange),
             best_ask=BestPriceData(price=best_ask, exchange=best_ask_exchange),
@@ -182,6 +182,6 @@ if __name__ == "__main__":
         print(f"Ticker Data: {ticker_data}")
 
     # Run the price engine
-    price_summary = loop.run_until_complete(price_engine("BTC/USD"))
+    price_summary = loop.run_until_complete(aggregated_market_data("BTC/USD"))
     print(f"Best Bid: {price_summary.best_bid}")
     print(f"Best Ask: {price_summary.best_ask}")

@@ -1,8 +1,9 @@
+from pydantic import BaseModel
 from dataclasses import dataclass
 from typing import Tuple,List,Union
 
 @dataclass
-class OrderBookData:
+class OrderBookData(BaseModel):
     top_bid:Tuple[float,float] # (price,volume)
     top_ask:Tuple[float,float] # (price,volume)
     spread:Union[float,None]

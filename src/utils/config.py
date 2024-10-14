@@ -17,3 +17,4 @@ class Config:
     ALPHA_VANTAGE_KEY = os.getenv("ALPAH_VANTAGE_KEY")
     KRAKEN_API_KEY = os.getenv("KRAKEN_API_KEY")
     KRAKEN_PRIVATE_KEY = os.getenv("KRAKEN_PRIVATE_KEY")
+    REDIS_URI=os.getenv("REDIS_URI")
