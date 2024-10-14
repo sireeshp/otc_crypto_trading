@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Test</title>
+    <script defer src="/static/js/test.js"></script>
+</head>
+
+<body>
+    <h1>WebSocket Test</h1>
+
+    <div>
+        <label for="exchange">Exchange Name: </label>
+        <input type="text" id="exchange" value="Kraken">
+    </div>
+    <div>
+        <label for="symbol">Symbol: </label>
+        <input type="text" id="symbol" value="BTCUSD">
+    </div>
+    <div>
+        <button id="connectBtn">Connect WebSocket</button>
+        <button id="disconnectBtn" disabled>Disconnect</button>
+    </div>
+
+    <h2>Messages:</h2>
+    <div id="messages" style="border: 1px solid #000; padding: 10px; height: 200px; overflow-y: auto;"></div>
+</body>
+
+</html>

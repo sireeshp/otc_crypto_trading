@@ -1,6 +1,9 @@
-from dataclasses import dataclass
-from typing import Tuple
-@dataclass
-class BestPriceData:
-    price: Tuple[float, float]  # (price, volume)
-    exchange: str
+from pydantic import Field
+
+from src.models.OrderBookData import PriceVolumePair
+
+
+class BestPriceData(PriceVolumePair):
+    exchange: str = Field(
+        ..., description="The exchange where the price is quoted."
+    )

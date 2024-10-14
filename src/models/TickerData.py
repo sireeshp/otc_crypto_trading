@@ -1,24 +1,25 @@
-from dataclasses import dataclass
-from typing import List, Tuple, Union
+from typing import Optional
 
-@dataclass
-class TickerData:
-    symbol:str
-    high:float
-    low:float
-    bid:float
-    bidVolume:Union[float,None]
-    ask:float
-    askVolume:Union[float,None]
-    vwap:float
-    open:float
-    close:float
-    last:float
-    previousClose:Union[float,None]
-    change:float
-    percentage:float
-    average:float
-    baseVolume:float
-    quoteVolume:float
-    last:float
-    datetime:str
+from pydantic import BaseModel
+
+
+class TickerData(BaseModel):
+    symbol: str
+    high: float
+    low: float
+    bid: float
+    bidVolume: Optional[float]
+    ask: float
+    askVolume: Optional[float]
+    vwap: float
+    open: float
+    close: float
+    last: float
+    previousClose: Optional[float]
+    change: float
+    percentage: float
+    average: float
+    baseVolume: float
+    quoteVolume: float
+    last: float
+    datetime: str

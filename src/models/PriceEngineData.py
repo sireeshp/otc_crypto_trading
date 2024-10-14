@@ -1,10 +1,12 @@
-from dataclasses import dataclass
+from typing import List, Optional
+
+from pydantic import BaseModel
+
 from src.models.BestPriceData import BestPriceData
-from typing import List
 from src.models.OrderBookData import OrderBookData
 
-@dataclass
-class PriceEngineData:
+
+class PriceEngineData(BaseModel):
     best_bid: BestPriceData
-    best_ask:BestPriceData
-    exchange_data:List[OrderBookData]
+    best_ask: BestPriceData
+    exchange_data: Optional[List[OrderBookData]]

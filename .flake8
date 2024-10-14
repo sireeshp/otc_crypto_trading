@@ -1,0 +1,5 @@
+[flake8]
+max-line-length = 120
+ignore = D205,D400,D401,D104,D100,D103,D200,D101,D107,D107,D102,D202
+extend-ignore = E501
+exclude = .git,__pycache__,.venv

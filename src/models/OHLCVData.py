@@ -1,10 +1,11 @@
-from dataclasses import dataclasses
+from dataclasses import dataclass
 
-@dataclasses
+
+@dataclass
 class OHLCVData:
-    timestamp:int
-    open:float
-    high:float
-    low:float
-    close:float
-    volume:float
+    timestamp: int
+    open: float
+    high: float
+    low: float
+    close: float
+    volume: float
