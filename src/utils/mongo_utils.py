@@ -1,5 +1,5 @@
-
-import motor.motor_asyncio
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+from pymongo.collection import Collection
 from pymongo.errors import ConnectionFailure
 
 from src.utils.config import Config
@@ -8,20 +8,24 @@ from src.utils.logger import setup_logger
 logger = setup_logger("mongo", "logs/mongo.log")
 
 
-# Function to return the database instance
-def get_db():
-    client = motor.motor_asyncio.AsyncIOMotorClient(Config.MONGO_URI)
-    return client[Config.MONGO_DATA_BASE]
-
-
-async def check_db_connection():
+async def get_db():
+    client = AsyncIOMotorClient(Config.MONGO_URI)
     try:
-        # Ensure that MongoDB is available
-        db = get_db()  # Use the get_db function to get the database instance
-        await db.command(
-            "ping"
-        )  # Ping the database to ensure connection is available
-        return True
-    except ConnectionFailure as conn_err:
-        logger.error(f"Error: Unable to connect to MongoDB server: {conn_err}")
-        return False
+        yield client[Config.MONGO_DATA_BASE]
+    except ConnectionFailure as e:
+        logger.error(f"MongoDB Connection Error: {e}")
+        raise ValueError("Cannot connect to MongoDB") from e
+    finally:
+        client.close()
+
+
+def get_otp_collection(db: AsyncIOMotorDatabase) -> Collection:
+    return db.get_collection("otps")
+
+
+def get_users_collection(db: AsyncIOMotorDatabase) -> Collection:
+    return db.get_collection("users")
+
+
+def get_fees_collection(db: AsyncIOMotorDatabase) -> Collection:
+    return db.get_collection("fees")

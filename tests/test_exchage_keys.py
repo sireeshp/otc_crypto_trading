@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from src.data.exchange_keys import get_exchange_keys
-from src.models.ExchangeKey import ExchangeKey
+from src.models.ExchangeKeyModel import ExchangeKey
 from src.utils.config import Config
 
 

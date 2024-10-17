@@ -2,8 +2,8 @@ from typing import List, Optional
 
 from pydantic import BaseModel
 
-from src.models.BestPriceData import BestPriceData
-from src.models.OrderBookData import OrderBookData
+from src.models.BestPriceModel import BestPriceData
+from src.models.OrderBookDataModel import OrderBookData
 
 
 class PriceEngineData(BaseModel):

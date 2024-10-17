@@ -10,9 +10,7 @@ logger = setup_logger("rate_limiter", "logs/rate_limiter.log")
 class RateLimiterMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, rate_limit: int = 60, window: int = 60):  # 60 sec
         super().__init__(app)
-        self.rate_limit = (
-            rate_limit  # Max number of requests allowed per window
-        )
+        self.rate_limit = rate_limit  # Max number of requests allowed per window
         self.window = window  # Time window in seconds
         self.redis = RedisCache(window)
 

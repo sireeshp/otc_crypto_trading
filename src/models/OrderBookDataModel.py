@@ -19,12 +19,8 @@ class OrderBookData(BaseModel):
         None,
         description="The difference between the top ask and top bid prices.",
     )
-    total_bid_volume: float = Field(
-        ..., description="Total volume of all bids."
-    )
-    total_ask_volume: float = Field(
-        ..., description="Total volume of all asks."
-    )
+    total_bid_volume: float = Field(..., description="Total volume of all bids.")
+    total_ask_volume: float = Field(..., description="Total volume of all asks.")
     vwap_bid: Optional[float] = Field(
         None, description="Volume Weighted Average Price (VWAP) for bids."
     )

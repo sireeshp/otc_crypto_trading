@@ -2,9 +2,9 @@ from typing import List
 
 from fastapi import APIRouter, HTTPException
 
-from src.models.OHLCVData import OHLCVData
-from src.models.PriceEngineData import PriceEngineData
-from src.models.TickerData import TickerData
+from src.models.OHLCVDataModel import OHLCVData
+from src.models.PriceEngineDataModel import PriceEngineData
+from src.models.TickerDataModel import TickerData
 from src.services.quote_service import (
     aggregated_market_data,
     fetch_historical_data,
@@ -120,9 +120,7 @@ async def get_aggregated_market_data(symbol: str = "BTCUSD"):
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.get(
-    "/exchange_tickers/{exchange_name}", response_model=List[TickerData]
-)
+@router.get("/exchange_tickers/{exchange_name}", response_model=List[TickerData])
 async def get_exchange_tickers(exchange_name: str = "Kraken"):
     """
     Retrieves the ticker data for all cryptocurrencies available on a specified exchange.

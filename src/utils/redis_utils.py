@@ -42,9 +42,7 @@ class RedisCache:
                 expire_time = expire if expire is not None else self.expire
                 serialized_value = json.dumps(value)
                 await self.redis.set(key, serialized_value, ex=expire_time)
-                logger.info(
-                    f"Key {key} stored in Redis with expiration {expire_time}s"
-                )
+                logger.info(f"Key {key} stored in Redis with expiration {expire_time}s")
         except Exception as e:
             logger.error(f"Error setting key {key} in Redis: {e}")
 

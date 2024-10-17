@@ -2,8 +2,8 @@
 
 from fastapi import APIRouter, WebSocket
 
+from src.services.connect_exchange_service import get_exchange_by_exchange_name
 from src.utils.app_utils import normalize_symbol
-from src.utils.exchange_utils import get_exchange_by_exchange_name
 from src.utils.logger import setup_logger
 from src.websockets.connection_manager import ConnectionManager
 
@@ -13,9 +13,7 @@ router = APIRouter()
 
 
 @router.websocket("/ws/subscribe/{exchange_name}/{symbol}")
-async def ws_subscribe_symbol(
-    exchange_name: str, symbol: str, websocket: WebSocket
-):
+async def ws_subscribe_symbol(exchange_name: str, symbol: str, websocket: WebSocket):
     exchange = None
     ex_symbol = normalize_symbol(symbol)
     try:
@@ -32,9 +30,7 @@ async def ws_subscribe_symbol(
                 ex_symbol, exchange_name, ticker
             )  # Broadcast to connected clients
     except Exception as e:
-        logger.error(
-            f"Error subscribing to {ex_symbol} on {exchange_name}: {e}"
-        )
+        logger.error(f"Error subscribing to {ex_symbol} on {exchange_name}: {e}")
     finally:
         if exchange:
             await exchange.close()

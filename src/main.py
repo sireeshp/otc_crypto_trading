@@ -1,11 +1,13 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from src.middlewares.jwt_middleware import JWTAuthMiddleware
 from src.middlewares.rate_limiter import RateLimiterMiddleware
-from src.routes.v1 import orders, quotes
+from src.routes.v1 import documents, orders, quotes
 from src.websockets.websocket_routes import router as websocket_quote_router
 
 
@@ -14,9 +16,7 @@ from src.websockets.websocket_routes import router as websocket_quote_router
 async def lifespan(app: FastAPI):
     # Instantiate the RateLimiterMiddleware
     rate_limiter = RateLimiterMiddleware(app, rate_limit=60, window=60)
-    app.state.rate_limiter = (
-        rate_limiter  # Store it in app state for global access
-    )
+    app.state.rate_limiter = rate_limiter  # Store it in app state for global access
     yield  # This starts the app
 
     # Clean up Redis connection when the app shuts down
@@ -36,21 +36,22 @@ app = FastAPI(
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-
-# Manually handle dispatch with RateLimiterMiddleware
-@app.middleware("http")
-async def custom_rate_limiter_middleware(request: Request, call_next):
-    """
-    Custom middleware that uses the RateLimiterMiddleware object to handle rate limiting.
-    """
-    rate_limiter = app.state.rate_limiter  # Access rate limiter from app state
-    # Use the RateLimiterMiddleware's dispatch method
-    return await rate_limiter.dispatch(request, call_next)
-
-
-# Include routers for different API sections
+allowed_origins = [
+    "http://localhost:3000",  # UI server URL (e.g., React or Angular)
+    "http://localhost:8080",  # Another UI server URL or mobile app URL
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,  # Allow requests from these origins
+    allow_credentials=True,  # Allow cookies and credentials
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
+)
+app.add_middleware(JWTAuthMiddleware)
+app.add_middleware(RateLimiterMiddleware)
 app.include_router(quotes.router, prefix="/api/v1/quotes", tags=["Quotes"])
 app.include_router(orders.router, prefix="/api/v1/orders", tags=["Orders"])
+app.include_router(documents.router, prefix="/api/v1/documents", tags=["Documents"])
 app.include_router(websocket_quote_router)
 
 

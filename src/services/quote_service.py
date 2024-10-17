@@ -5,15 +5,18 @@ from typing import List, Union
 import ccxt.async_support as ccxt
 from ccxt.base.exchange import Exchange
 
-from src.data.exchange_keys import get_exchange_keys
 from src.data.fetch_fees import fetch_fees
-from src.models.markdet_data import MarketData
-from src.models.OHLCVData import OHLCVData
-from src.models.OrderBookData import OrderBookData, PriceVolumePair
-from src.models.PriceEngineData import BestPriceData, PriceEngineData
-from src.models.TickerData import TickerData
+from src.models.MarketDataModel import MarketData
+from src.models.OHLCVDataModel import OHLCVData
+from src.models.OrderBookDataModel import OrderBookData, PriceVolumePair
+from src.models.PriceEngineDataModel import BestPriceData, PriceEngineData
+from src.models.TickerDataModel import TickerData
+from src.services.connect_exchange_service import (
+    get_exchange_by_exchange_name,
+    get_exchange_keys,
+    initialize_exchange,
+)
 from src.utils.app_utils import normalize_symbol
-from src.utils.exchange_utils import get_exchange_by_exchange_name, initialize_exchange
 from src.utils.logger import setup_logger
 from src.utils.redis_utils import RedisCache
 
@@ -39,9 +42,7 @@ async def fetch_historical_data(
         exchange = initialize_exchange(exchanges[0])
         if exchange is not None:
             ex_symbol = normalize_symbol(symbol)
-            ohlcv_data = await exchange.fetch_ohlcv(
-                ex_symbol, timeframe, since=since
-            )
+            ohlcv_data = await exchange.fetch_ohlcv(ex_symbol, timeframe, since=since)
             ohlcv_list: List[OHLCVData] = [
                 OHLCVData(
                     timestamp=ohlcv[0],
@@ -117,9 +118,7 @@ def calculate_vwap(
                 price, volume = entry[0], entry[1]
                 total_volume += volume
                 weighted_price_sum += price * volume
-            return (
-                None if total_volume == 0 else weighted_price_sum / total_volume
-            )
+            return None if total_volume == 0 else weighted_price_sum / total_volume
     except Exception as e:
         logger.error(f"Error calculate_vwap: {e}")
     return None
@@ -171,17 +170,13 @@ async def get_order_book_model(
     try:
         ex_symbol = normalize_symbol(symbol)
         order_book = await exchange.fetch_order_book(ex_symbol)
-        sorted_bids = sorted(
-            order_book["bids"], key=lambda x: x[0], reverse=True
-        )
+        sorted_bids = sorted(order_book["bids"], key=lambda x: x[0], reverse=True)
         sorted_asks = sorted(order_book["asks"], key=lambda x: x[0])
 
         top_ask = sorted_asks[0] if len(sorted_asks) > 0 else [None, None]
         top_bid = sorted_bids[0] if len(sorted_bids) > 0 else [None, None]
         spread = (
-            round(top_ask[0] - top_bid[0], 5)
-            if top_bid[0] and top_ask[0]
-            else None
+            round(top_ask[0] - top_bid[0], 5) if top_bid[0] and top_ask[0] else None
         )
 
         total_bid_volume = sum(bid[1] for bid in sorted_bids)
@@ -253,12 +248,8 @@ async def aggregated_market_data(symbol="BTC/USD") -> PriceEngineData:
             exchange_data, key=lambda x: x.top_bid.price, reverse=True
         )
         return PriceEngineData(
-            best_bid=BestPriceData(
-                **best_bid.model_dump(), exchange=best_bid_exchange
-            ),
-            best_ask=BestPriceData(
-                **best_ask.model_dump(), exchange=best_ask_exchange
-            ),
+            best_bid=BestPriceData(**best_bid.model_dump(), exchange=best_bid_exchange),
+            best_ask=BestPriceData(**best_ask.model_dump(), exchange=best_ask_exchange),
             exchange_data=exchange_data,
         )
     except Exception as e:
