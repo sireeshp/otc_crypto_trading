@@ -5,7 +5,7 @@ from src.models.EmailModel import EmailModel
 from src.utils.config import Config
 from src.utils.logger import setup_logger
 
-logger = setup_logger("email_service", "/logs/email_service.log")
+logger = setup_logger("email_service", "logs/email_service.log")
 
 
 def send_email(email: EmailModel):

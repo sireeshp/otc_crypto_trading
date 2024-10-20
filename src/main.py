@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from src.middlewares.jwt_middleware import JWTAuthMiddleware
 from src.middlewares.rate_limiter import RateLimiterMiddleware
-from src.routes.v1 import documents, orders, quotes
+from src.routes.v1 import documents, orders, quotes, auth
 from src.websockets.websocket_routes import router as websocket_quote_router
 
 
@@ -52,6 +52,7 @@ app.add_middleware(RateLimiterMiddleware)
 app.include_router(quotes.router, prefix="/api/v1/quotes", tags=["Quotes"])
 app.include_router(orders.router, prefix="/api/v1/orders", tags=["Orders"])
 app.include_router(documents.router, prefix="/api/v1/documents", tags=["Documents"])
+app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(websocket_quote_router)
 
 
