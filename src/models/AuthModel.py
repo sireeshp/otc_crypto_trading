@@ -12,6 +12,11 @@ PhoneNumberStr = Annotated[
 ]  # E.164 phone format
 
 
+class TwoFactorRequest(BaseModel):
+    user_id: str
+    method: str
+
+
 class LoginModel(BaseModel):
     # userName can be an email or a phone number
     user_name: Union[EmailStr, PhoneNumberStr]
@@ -26,6 +31,10 @@ class LoginModel(BaseModel):
     @field_validator("password", mode="before")
     def strip_password_whitespace(cls, value):
         return value.strip()
+
+
+class SendOtpModel(BaseModel):
+    user_name: Union[EmailStr, PhoneNumberStr]
 
 
 class VerifyOtpModel(BaseModel):
@@ -148,7 +157,9 @@ class Role(BaseModel):
 
 # Define User Model
 class User(BaseModel):
-    user_type: Literal["individual", "business_entity", "financial_institution"]
+    user_type: Optional[
+        Literal["individual", "business_entity", "financial_institution"]
+    ] = Field(default=["individual"], description="Type of the user")
     email: EmailStr
     password: str = Field(
         ...,
@@ -157,32 +168,38 @@ class User(BaseModel):
     )
     phone_number: PhoneNumberStr
     name: str
-    about: Optional[str]
-    avatar_url: Optional[HttpUrl]
-
+    about: Optional[str] = None
+    avatar_url: Optional[HttpUrl] = None
     # KYC data
-    kyc_data: KycData = Field(..., description="KYC data for the user")
+    kyc_data: Optional[KycData] = Field(..., description="KYC data for the user")
 
     # Crypto wallets
-    crypto_wallets: List[CryptoWallet] = Field(
-        ..., description="List of associated cryptocurrency wallets"
+    crypto_wallets: Optional[List[CryptoWallet]] = Field(
+        default=[], description="List of associated cryptocurrency wallets"
     )
 
     # Transaction history
-    transaction_history: List[Transaction] = Field(
-        ..., description="User transaction history"
+    transaction_history: Optional[List[Transaction]] = Field(
+        default=[], description="User transaction history"
     )
 
     # User tier and trading limits
-    user_tier: str = Field(..., description="Account tier (e.g., basic, pro, VIP)")
-    trading_limits: float = Field(..., description="User's trading limits")
+    user_tier: Optional[Literal["basic", "pro", "vip"]] = Field(
+        default="basic",
+        description="Account tier (e.g., basic, pro, VIP)",
+    )
+    trading_limits: Optional[float] = Field(
+        default=0.0, description="User's trading limits"
+    )
     fees: Optional[Fees]
     # Security settings
-    two_factor_enabled: bool = Field(..., description="Is 2FA enabled?")
+    two_factor_enabled: bool = Field(default=False, description="Is 2FA enabled?")
     two_factor_method: Optional[str] = Field(
-        None, description="2FA method (sms, authenticator, email)"
+        default=None, description="2FA method (sms, authenticator, email)"
     )
-    login_attempts: int = Field(0, description="Number of failed login attempts")
+    login_attempts: int = Field(
+        default=0, description="Number of failed login attempts"
+    )
     last_login: Optional[datetime] = Field(
         None, description="Date and time of the last login"
     )
@@ -192,13 +209,17 @@ class User(BaseModel):
         ..., description="Legal compliance information for the user"
     )
     ai_trading_enabled: bool = Field(
-        False, description="Is AI/Algo trading enabled for the user?"
+        default=False, description="Is AI/Algo trading enabled for the user?"
     )
-    trading_products: List[Literal["crypto", "forex", "stocks", "commodities", "otc"]]
+    trading_products: List[
+        Literal["crypto", "forex", "stocks", "commodities", "otc"]
+    ] = Field(default=["crypto"], description="Trading products allowed for the user")
 
-    roles: Optional[List[Role]]
-    data_store_preference: Literal["private_server", "blockchain", "internal_otc"] = (
-        Field(..., description="User's preferred data storage option")
+    roles: Optional[List["Role"]] = Field(
+        default=[], description="Roles assigned to the user"
+    )
+    data_store_preference: Literal["private_server", "blockchain", "internal"] = Field(
+        default=["internal"], description="User's preferred data storage option"
     )
 
     @field_validator("email", mode="before")
