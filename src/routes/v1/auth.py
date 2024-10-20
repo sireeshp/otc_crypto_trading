@@ -97,7 +97,7 @@ async def login(
 
 
 @router.post("/verify_otp", status_code=status.HTTP_200_OK)
-async def verify_otp(verify_model: VerifyOtpModel, db=Depends(get_db)):
+async def verify_otp(verify_otp_model: VerifyOtpModel, db=Depends(get_db)):
     """
     Verifies a One-Time Password (OTP) provided by the user for authentication.
 
@@ -107,7 +107,7 @@ async def verify_otp(verify_model: VerifyOtpModel, db=Depends(get_db)):
     is missing and returns the result of the authentication process.
 
     Args:
-        verify_model (VerifyOtpModel): The model containing
+        verify_otp_model (VerifyOtpModel): The model containing
         the user's contact information and OTP code.
         db: The database dependency for user authentication.
 
@@ -121,21 +121,21 @@ async def verify_otp(verify_model: VerifyOtpModel, db=Depends(get_db)):
     """
 
     try:
-        if verify_model.user_name is None:
+        if verify_otp_model.user_name is None:
             raise HTTPException(
                 status_code=400, detail="Email or Phone number is required"
             )
 
-        if verify_model.code is None:
+        if verify_otp_model.code is None:
             raise HTTPException(status_code=400, detail="OTP is required")
-        return await authenticate_otp(verify_model.user_name, verify_model.code, db)
+        return await authenticate_otp(verify_otp_model.user_name, verify_otp_model.code, db)
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/send-otp", status_code=status.HTTP_200_OK)
-async def send_opt(send_oto_model: SendOtpModel, db=Depends(get_db)):
+async def send_otp(send_otp_model: SendOtpModel, db=Depends(get_db)):
     """
     Initiates the process of sending a One-Time Password (OTP) to the user.
 
@@ -145,7 +145,7 @@ async def send_opt(send_oto_model: SendOtpModel, db=Depends(get_db)):
     phone number is specified, returning an error if not.
 
     Args:
-        send_oto_model (SendOtpModel): The model containing the user's contact information.
+        send_otp_model (SendOtpModel): The model containing the user's contact information.
         db: The database dependency for managing user data.
 
     Returns:
@@ -156,12 +156,12 @@ async def send_opt(send_oto_model: SendOtpModel, db=Depends(get_db)):
     """
 
     try:
-        if send_oto_model.user_name is None:
+        if send_otp_model.user_name is None:
             return HTTPException(
                 status_code=400, detail="Email or Phone number is required"
             )
 
-        return await send_otp(send_oto_model.user_name, db)
+        return await send_otp(send_otp_model.user_name, db)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 

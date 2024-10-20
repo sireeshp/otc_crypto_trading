@@ -22,19 +22,22 @@ async def get_ticker(symbol: str = "BTCUSD"):
     Retrieves the ticker data for a specified cryptocurrency symbol.
     If the ticker data is not found, it raises a 404 HTTP exception.
 
-    This asynchronous function fetches the ticker information for the given symbol and returns it in the response.
-    If an error occurs during the fetching process or if the ticker data is not available, it raises an appropriate
+    This asynchronous function fetches the ticker information for
+    the given symbol and returns it in the response.
+    If an error occurs during the fetching process or
+    if the ticker data is not available, it raises an appropriate
     HTTP exception with a relevant status code and message.
 
     Args:
-        symbol (str): The cryptocurrency symbol for which to fetch the ticker data. Defaults to 'BTCUSD'.
+        symbol (str): The cryptocurrency symbol for which to
+        fetch the ticker data. Defaults to 'BTCUSD'.
 
     Returns:
         TickerData: The ticker data for the specified cryptocurrency symbol.
 
     Raises:
         HTTPException: If the ticker data is not found, a 404 status code is raised.
-                       If any other error occurs, a 500 status code is raised.
+        If any other error occurs, a 500 status code is raised.
     """
 
     try:
@@ -56,12 +59,15 @@ async def get_historical_data(
     Retrieves historical data for a specified cryptocurrency symbol over a given time frame.
     If the historical data is not found, it raises a 404 HTTP exception.
 
-    This asynchronous function fetches historical market data for the specified symbol, time frame, and optional
-    starting point. If the data is unavailable or an error occurs during the fetching process, it raises an
+    This asynchronous function fetches historical market data
+    for the specified symbol, time frame, and optional
+    starting point. If the data is unavailable or an error
+    occurs during the fetching process, it raises an
     appropriate HTTP exception with a relevant status code and message.
 
     Args:
-        symbol (str): The cryptocurrency symbol for which to fetch historical data. Defaults to 'BTCUSD'.
+        symbol (str): The cryptocurrency symbol for which to fetch
+        historical data. Defaults to 'BTCUSD'.
         time_frame (str): The time frame for the historical data. Defaults to '1h'.
         since (int): An optional parameter to specify the starting point for the historical data.
 
@@ -70,7 +76,7 @@ async def get_historical_data(
 
     Raises:
         HTTPException: If the historical data is not found, a 404 status code is raised.
-                       If any other error occurs, a 500 status code is raised.
+        If any other error occurs, a 500 status code is raised.
     """
 
     try:
@@ -91,12 +97,15 @@ async def get_aggregated_market_data(symbol: str = "BTCUSD"):
     Retrieves historical data for a specified cryptocurrency symbol over a given time frame.
     If the historical data is not found, it raises a 404 HTTP exception.
 
-    This asynchronous function fetches historical market data for the specified symbol, time frame, and optional
-    starting point. If the data is unavailable or an error occurs during the fetching process, it raises an
+    This asynchronous function fetches historical market data for
+    the specified symbol, time frame, and optional
+    starting point. If the data is unavailable or an error occurs
+    during the fetching process, it raises an
     appropriate HTTP exception with a relevant status code and message.
 
     Args:
-        symbol (str): The cryptocurrency symbol for which to fetch historical data. Defaults to 'BTCUSD'.
+        symbol (str): The cryptocurrency symbol for which to fetch
+        historical data. Defaults to 'BTCUSD'.
         time_frame (str): The time frame for the historical data. Defaults to '1h'.
         since (int): An optional parameter to specify the starting point for the historical data.
 
@@ -105,7 +114,7 @@ async def get_aggregated_market_data(symbol: str = "BTCUSD"):
 
     Raises:
         HTTPException: If the historical data is not found, a 404 status code is raised.
-                       If any other error occurs, a 500 status code is raised.
+        If any other error occurs, a 500 status code is raised.
     """
 
     try:
@@ -126,19 +135,23 @@ async def get_exchange_tickers(exchange_name: str = "Kraken"):
     Retrieves the ticker data for all cryptocurrencies available on a specified exchange.
     If no tickers are found for the given exchange, it raises a 404 HTTP exception.
 
-    This asynchronous function fetches the ticker information for the specified exchange and returns it in the response.
-    If an error occurs during the fetching process or if no tickers are available, it raises an appropriate
+    This asynchronous function fetches the ticker information
+    for the specified exchange and returns it in the response.
+    If an error occurs during the fetching process or if no
+    tickers are available, it raises an appropriate
     HTTP exception with a relevant status code and message.
 
     Args:
-        exchange_name (str): The name of the exchange for which to fetch ticker data. Defaults to "Kraken".
+        exchange_name (str): The name of the exchange for
+        which to fetch ticker data. Defaults to "Kraken".
 
     Returns:
         List[TickerData]: A list of ticker data for the specified exchange.
 
     Raises:
-        HTTPException: If no tickers are found for the specified exchange, a 404 status code is raised.
-                       If any other error occurs, a 500 status code is raised.
+        HTTPException: If no tickers are found for
+        the specified exchange, a 404 status code is raised.
+        If any other error occurs, a 500 status code is raised.
     """
     try:
         tickers = await fetch_tickers(exchange_name)
@@ -154,6 +167,26 @@ async def get_exchange_tickers(exchange_name: str = "Kraken"):
 
 @router.get("/markets/{exchange_name}")
 async def get_markets(exchange_name: str = "Kraken"):
+    """
+    Retrieves market data for a specified exchange.
+
+    This asynchronous function fetches the available
+    markets from the given exchange name, defaulting
+    to "Kraken" if no exchange name is provided.
+    It returns the market data or raises an error if the markets cannot be loaded.
+
+    Args:
+        exchange_name (str): The name of the exchange
+        for which to retrieve market data. Defaults to "Kraken".
+
+    Returns:
+        dict: The market data for the specified exchange.
+
+    Raises:
+        HTTPException: If the markets cannot be loaded or
+        if an error occurs during the retrieval process.
+    """
+
     try:
         markets = await load_markets(exchange_name)
         if markets is None:
