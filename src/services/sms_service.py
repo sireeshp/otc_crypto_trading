@@ -1,12 +1,14 @@
 import re
+from typing import Dict, List
+
 from clicksend_client import (
-    SmsMessage,
-    SmsMessageCollection,
+    ApiClient,
     Configuration,
     SMSApi,
-    ApiClient,
+    SmsMessage,
+    SmsMessageCollection,
 )
-from typing import List, Dict
+
 from src.utils.config import Config
 from src.utils.logger import setup_logger
 

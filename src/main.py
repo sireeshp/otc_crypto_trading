@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from src.middlewares.jwt_middleware import JWTAuthMiddleware
 from src.middlewares.rate_limiter import RateLimiterMiddleware
-from src.routes.v1 import documents, orders, quotes, auth
+from src.routes.v1 import auth, documents, orders, quotes
 from src.websockets.websocket_routes import router as websocket_quote_router
 
 

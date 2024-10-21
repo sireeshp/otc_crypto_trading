@@ -1,29 +1,30 @@
 from typing import List
+
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 
 from src.models.AuthModel import (
-    LoginModel,
-    VerifyOtpModel,
-    SendOtpModel,
-    User,
-    Transaction,
     CryptoWallet,
     KycData,
+    LoginModel,
+    SendOtpModel,
+    Transaction,
     TwoFactorRequest,
+    User,
+    VerifyOtpModel,
 )
 from src.models.EmailModel import EmailModel
 from src.services.auth_service import (
+    add_crypto_wallet,
+    add_transaction,
+    add_user,
     add_user_collection,
     authenticate_email,
     authenticate_otp,
-    send_otp,
-    add_user,
-    enable_two_factor,
     disable_two_factor,
+    enable_two_factor,
     get_user_by_id,
+    send_otp,
     update_kyc_data,
-    add_transaction,
-    add_crypto_wallet,
 )
 from src.services.email_service import send_email
 from src.utils import has_role
@@ -140,7 +141,7 @@ async def verify_otp(verify_otp_model: VerifyOtpModel, db=Depends(get_db)):
 
 
 @router.post("/send-otp", status_code=status.HTTP_200_OK)
-async def send_otp(send_otp_model: SendOtpModel, db=Depends(get_db)):
+async def send_otp_route(send_otp_model: SendOtpModel, db=Depends(get_db)):
     """
     Initiates the process of sending a One-Time Password (OTP) to the user.
 

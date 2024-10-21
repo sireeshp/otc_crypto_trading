@@ -14,7 +14,10 @@ PhoneNumberStr = Annotated[
 
 class TwoFactorRequest(BaseModel):
     user_id: str
-    method: str
+    method: Optional[Literal["sms", "authenticator", "email"]] = Field(
+        default="sms",
+        description="The method for two-factor authentication. Options: 'sms', 'authenticator', or 'email'.",
+    )
 
 
 class LoginModel(BaseModel):

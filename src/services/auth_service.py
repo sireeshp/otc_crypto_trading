@@ -8,13 +8,13 @@ from passlib.context import CryptContext
 from pymongo.collection import Collection
 from pymongo.errors import BulkWriteError
 
-from src.models.AuthModel import User, CryptoWallet, Transaction, KycData
+from src.models.AuthModel import CryptoWallet, KycData, Transaction, User
 from src.models.EmailModel import EmailModel
+from src.services.email_service import send_email
+from src.services.sms_service import send_sms
 from src.utils.config import Config
 from src.utils.logger import setup_logger
 from src.utils.mongo_utils import get_otp_collection, get_users_collection
-from src.services.email_service import send_email
-from src.services.sms_service import send_sms
 
 # Setup logger and password hashing context
 logger = setup_logger("auth_service", "logs/auth_service.log")
@@ -106,7 +106,7 @@ async def add_crypto_wallet(user_id: str, wallet_data: CryptoWallet, db) -> User
         )
     except Exception as e:
         logger.error(f"Failed to add crypto wallet: {e}")
-    raise ValueError(e) from e
+        raise ValueError(e) from e
 
 
 async def add_transaction(user_id: str, transaction_data: Transaction, db) -> User:
@@ -118,7 +118,7 @@ async def add_transaction(user_id: str, transaction_data: Transaction, db) -> Us
         )
     except Exception as e:
         logger.error(f"Failed to add transaction: {e}")
-    raise ValueError(e) from e
+        raise ValueError(e) from e
 
 
 async def update_kyc_data(user_id: str, kyc_data: KycData, db) -> User:
@@ -130,7 +130,7 @@ async def update_kyc_data(user_id: str, kyc_data: KycData, db) -> User:
         )
     except Exception as e:
         logger.error(f"Failed to add transaction: {e}")
-    raise ValueError(e) from e
+        raise ValueError(e) from e
 
 
 async def enable_two_factor(user_id: str, method: str, db) -> User:
@@ -142,7 +142,7 @@ async def enable_two_factor(user_id: str, method: str, db) -> User:
         )
     except Exception as e:
         logger.error(f"Failed to add transaction: {e}")
-    raise ValueError(e) from e
+        raise ValueError(e) from e
 
 
 async def disable_two_factor(user_id: str, db) -> User:
@@ -154,7 +154,7 @@ async def disable_two_factor(user_id: str, db) -> User:
         )
     except Exception as e:
         logger.error(f"Failed to add transaction: {e}")
-    raise ValueError(e) from e
+        raise ValueError(e) from e
 
 
 async def create_access_token(data: dict, expires_delta: timedelta = None):
@@ -162,8 +162,7 @@ async def create_access_token(data: dict, expires_delta: timedelta = None):
     expire = (
         datetime.utcnow(timezone.utc) + expires_delta
         if expires_delta
-        else datetime.utcnow(timezone.utc)
-        + timedelta(minutes=Config.ACCESS_TOKEN_EXPIRE_MINUTES)
+        else datetime.utcnow(timezone.utc) + timedelta(minutes=Config.ACCESS_TOKEN_EXPIRE_MINUTES)
     )
     to_encode["exp"] = expire
     return jwt.encode(to_encode, Config.AUTH_SECURITY_KEY, algorithm=Config.ALGORITHM)
