@@ -1,11 +1,12 @@
 import random
 from datetime import datetime, timedelta, timezone
-from typing import Union
+from typing import List, Union
 
 import jwt
 from bson import ObjectId
 from passlib.context import CryptContext
 from pymongo.collection import Collection
+from pymongo.errors import BulkWriteError
 
 from src.models.AuthModel import User, CryptoWallet, Transaction, KycData
 from src.models.EmailModel import EmailModel
@@ -53,6 +54,40 @@ async def add_user(user: User, db):
     token_data = {"sub": str(saved_user["_id"]), "email": saved_user["email"]}
     token = await create_access_token(data=token_data)
     return {"token": token, "profile": saved_user}
+
+
+async def add_user_collection(users: List[User], db):
+    try:
+        exist = []
+        not_exist = []
+        for user in users:
+            db_user = find_user(user.email, user.phone_number, db)
+            if db_user is not None:
+                exist.append(user)
+            else:
+                not_exist.append(user)
+                if user.password is None:
+                    user.password = Config.DEFAULT_PASSWORD
+                user.password = get_password_hash(user.password)
+        user_collection = get_users_collection(db=db)
+        response = await user_collection.insert_many(not_exist)
+        if response.acknowledged:
+            inserted_count = len(response.inserted_ids)
+            return {
+                "status": "success",
+                "inserted_count": inserted_count,
+                "failed": exist,
+            }
+        else:
+            raise ValueError("Insert operation not acknowledged by the server")
+    except BulkWriteError as bwe:
+        # Handle any bulk write errors
+        logger.error(f"Bulk write error occurred: {bwe.details}")
+        return {"status": "failed", "error": bwe.details}
+    except Exception as e:
+        # Catch any other exceptions
+        logger.error(f"An error occurred during insert_many: {str(e)}")
+        return {"status": "failed", "error": str(e)}
 
 
 async def update_user(user_id: str, update_data: dict, db) -> User:

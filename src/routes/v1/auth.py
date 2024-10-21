@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 
 from src.models.AuthModel import (
@@ -12,6 +13,7 @@ from src.models.AuthModel import (
 )
 from src.models.EmailModel import EmailModel
 from src.services.auth_service import (
+    add_user_collection,
     authenticate_email,
     authenticate_otp,
     send_otp,
@@ -24,6 +26,7 @@ from src.services.auth_service import (
     add_crypto_wallet,
 )
 from src.services.email_service import send_email
+from src.utils import has_role
 from src.utils.config import Config
 from src.utils.mongo_utils import get_db
 
@@ -40,7 +43,7 @@ async def register(
     try:
         await add_user(user, db=db)
         send_register_email(request, background_tasks, user)
-    except Exception as e:
+    except ValueError as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -92,7 +95,7 @@ async def login(
             )
         send_login_email(request, background_tasks, user)
         return user
-    except Exception as e:
+    except ValueError as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -128,9 +131,11 @@ async def verify_otp(verify_otp_model: VerifyOtpModel, db=Depends(get_db)):
 
         if verify_otp_model.code is None:
             raise HTTPException(status_code=400, detail="OTP is required")
-        return await authenticate_otp(verify_otp_model.user_name, verify_otp_model.code, db)
+        return await authenticate_otp(
+            verify_otp_model.user_name, verify_otp_model.code, db
+        )
 
-    except Exception as e:
+    except ValueError as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -162,7 +167,7 @@ async def send_otp(send_otp_model: SendOtpModel, db=Depends(get_db)):
             )
 
         return await send_otp(send_otp_model.user_name, db)
-    except Exception as e:
+    except ValueError as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -314,6 +319,32 @@ async def add_user_transaction(
             user_id=user_id, transaction_data=transaction, db=db
         )
         return {"message": "Transaction added successfully", "user": updated_user}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@router.post("/add-users")
+async def add_users(users: List[User], request: Request, db=Depends(get_db)):
+    """
+    Adds a collection of users to the database if the requester has the appropriate role.
+
+    This asynchronous function processes a request to add multiple users, ensuring that the requester has the 'admin' role before proceeding with the addition. It returns the result of the user addition operation or raises an error if the requester lacks the necessary permissions.
+
+    Args:
+        users (List[User]): A list of user objects to be added to the database.
+        request (Request): The HTTP request object containing user information and roles.
+        db: The database dependency for managing user data.
+
+    Returns:
+        dict: The result of the user addition operation.
+
+    Raises:
+        HTTPException: If the requester does not have the 'admin' role or if a value error occurs during the addition process.
+    """
+
+    try:
+        if has_role(request.state.user, ["admin"]):
+            return await add_user_collection(users, db)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 
