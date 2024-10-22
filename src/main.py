@@ -1,12 +1,13 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+
 from src.middlewares.jwt_middleware import JWTAuthMiddleware
 from src.middlewares.rate_limiter import RateLimiterMiddleware
-from src.routes.v1 import auth, documents, orders, quotes, exchange
+from src.routes.v1 import auth, documents, exchange, orders, quotes
 from src.websockets.websocket_routes import router as websocket_quote_router
 
 

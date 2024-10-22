@@ -127,7 +127,7 @@ async def add_user_collection(users: List[User], db):
     except BulkWriteError as bwe:
         # Handle any bulk write errors
         logger.error(f"Bulk write error occurred: {bwe.details}")
-        raise ValueError({"status": "failed", "error": bwe.details}) from e
+        raise ValueError({"status": "failed", "error": bwe.details}) from bwe
     except Exception as e:
         # Catch any other exceptions
         logger.error(f"An error occurred during insert_many: {str(e)}")

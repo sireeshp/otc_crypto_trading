@@ -1,4 +1,3 @@
-import jwt
 from typing import List
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status

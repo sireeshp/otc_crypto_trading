@@ -1,7 +1,8 @@
 from typing import List, Union
-from bson import ObjectId
+
 import ccxt.async_support as ccxt
 import ccxt.pro as ccxtpro
+from bson import ObjectId
 from ccxt.base.exchange import Exchange
 from pymongo.errors import ConnectionFailure, PyMongoError
 
