@@ -1,5 +1,5 @@
 from typing import List, Union
-
+from bson import ObjectId
 import ccxt.async_support as ccxt
 import ccxt.pro as ccxtpro
 from ccxt.base.exchange import Exchange
@@ -8,7 +8,7 @@ from pymongo.errors import ConnectionFailure, PyMongoError
 from src.models.ExchangeKeyModel import ExchangeKey
 from src.utils.config import Config
 from src.utils.logger import setup_logger
-from src.utils.mongo_utils import get_db
+from src.utils.mongo_utils import get_api_keys_collection, get_db
 
 logger = setup_logger("connect_exchange_service", "logs/connect_exchange_service.log")
 
@@ -77,6 +77,82 @@ async def get_exchange_by_exchange_name(exchange_name, ws: bool = False) -> Exch
     return exchange
 
 
+async def add_exchange_key(exchange_key: dict, db):
+    try:
+        api_keys_collection = get_api_keys_collection(db=db)
+        return await api_keys_collection.insert_one(exchange_key)
+    except ConnectionFailure as conn_err:
+        logger.error(f"Error: Unable to connect to the MongoDB server: {conn_err}")
+        raise ValueError(conn_err) from conn_err
+
+    except PyMongoError as pymongo_err:
+        logger.error(f"MongoDB error occurred: {pymongo_err}")
+        raise ValueError(pymongo_err) from pymongo_err
+
+    except Exception as general_err:
+        logger.error(f"An unexpected error occurred: {general_err}")
+        raise ValueError(general_err) from general_err
+
+
+async def update_exchange_key(exchange_id: str, update_data: dict):
+    try:
+        async for db in get_db():
+            api_keys_collection = get_api_keys_collection(db=db)
+
+            return await api_keys_collection.update_one(
+                {"_id": ObjectId(exchange_id)}, {"$set": update_data}
+            )
+    except ConnectionFailure as conn_err:
+        logger.error(f"Error: Unable to connect to the MongoDB server: {conn_err}")
+        raise ValueError(conn_err) from conn_err
+
+    except PyMongoError as pymongo_err:
+        logger.error(f"MongoDB error occurred: {pymongo_err}")
+        raise ValueError(pymongo_err) from pymongo_err
+
+    except Exception as general_err:
+        logger.error(f"An unexpected error occurred: {general_err}")
+        raise ValueError(general_err) from general_err
+
+
+async def bulk_add_exchange_key(exchange_keys: List[dict], db):
+    try:
+        api_keys_collection = get_api_keys_collection(db=db)
+        return await api_keys_collection.insert_many(exchange_keys)
+    except ConnectionFailure as conn_err:
+        logger.error(f"Error: Unable to connect to the MongoDB server: {conn_err}")
+        raise ValueError(conn_err) from conn_err
+
+    except PyMongoError as pymongo_err:
+        logger.error(f"MongoDB error occurred: {pymongo_err}")
+        raise ValueError(pymongo_err) from pymongo_err
+
+    except Exception as general_err:
+        logger.error(f"An unexpected error occurred: {general_err}")
+        raise ValueError(general_err) from general_err
+
+
+async def get_user_exchange_keys(user_id: str, db) -> List[ExchangeKey]:
+    try:
+        print(user_id)
+        api_keys_collection = get_api_keys_collection(db=db)
+        return api_keys_collection.find({user_id: user_id})
+    except ConnectionFailure as conn_err:
+        print(conn_err)
+        logger.error(f"Error: Unable to connect to the MongoDB server: {conn_err}")
+        raise ValueError(conn_err) from conn_err
+
+    except PyMongoError as pymongo_err:
+        print(pymongo_err)
+        logger.error(f"MongoDB error occurred: {pymongo_err}")
+        raise ValueError(pymongo_err) from pymongo_err
+
+    except Exception as general_err:
+        print(general_err)
+        logger.error(f"An unexpected error occurred: {general_err}")
+        raise ValueError(general_err) from general_err
+
+
 async def get_exchange_keys() -> List[ExchangeKey]:
     connect_db = Config.CONNECT_DB
     defaultCon = [
@@ -94,7 +170,8 @@ async def get_exchange_keys() -> List[ExchangeKey]:
     try:
         exchange_keys = []
         async for db in get_db():
-            async for collect in db.apiKeys.find({}):
+            api_keys_collection = get_api_keys_collection(db=db)
+            async for collect in api_keys_collection.find({}):
                 exchange_keys.append(
                     ExchangeKey(
                         api_key=collect["api_key"],

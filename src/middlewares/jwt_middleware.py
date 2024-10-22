@@ -14,11 +14,11 @@ logger = setup_logger("jwt_middleware", "logs/jwt_middleware.log")
 
 EXCLUDED_PATHS = [
     "/",
-    "/login",
-    "/register",
-    "/send_otp",
-    "/verify_otp",
-    "/forgot_password",
+    "/auth/login",
+    "/auth/register",
+    "/auth/send_otp",
+    "/auth/verify_otp",
+    "/auth/forgot_password",
     "/docs",
     "/redoc",
     "/openapi.json",
@@ -33,8 +33,11 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint):
         # Log the incoming request path
         logger.info(f"Processing request path: {request.url.path}")
-
-        if request.url.path in EXCLUDED_PATHS:
+        url_path = request.url.path
+        if "/api/v1" in url_path:
+            url_path = url_path.replace("/api/v1", "")
+        print(url_path)
+        if url_path in EXCLUDED_PATHS:
             logger.info(f"Skipping JWT authentication for {request.url.path}")
             return await call_next(request)
 
@@ -47,9 +50,11 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
             )
 
         token = auth_header.split(" ")[1]
+        print(token)
         try:
             # Decode JWT token
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            print(payload)
             logger.info("JWT token decoded successfully")
 
             # Check if token has expired
@@ -63,7 +68,7 @@ class JWTAuthMiddleware(BaseHTTPMiddleware):
                 raise HTTPException(
                     status_code=401, detail="Token payload missing user ID"
                 )
-
+            print(user_id)
             # Fetch the user from the database
             async for db in get_db():
                 user = await get_user_by_id(user_id, db=db)

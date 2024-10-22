@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Annotated, List, Literal, Optional, Union
 
-from pydantic import BaseModel, EmailStr, Field, HttpUrl, IPvAnyAddress, field_validator
+from pydantic import BaseModel, EmailStr, Field, HttpUrl, field_validator
 
 from src.models.FeesModel import Fees
 
@@ -134,10 +134,10 @@ class LegalCompliance(BaseModel):
     terms_agreed_date: datetime = Field(
         ..., description="Date when the user agreed to the terms"
     )
-    ip_address: IPvAnyAddress = Field(
+    ip_address: str = Field(
         ..., description="IP address from where the terms were agreed"
     )
-    last_login_ip: Optional[IPvAnyAddress] = Field(
+    last_login_ip: Optional[str] = Field(
         None, description="Last login IP address of the user"
     )
     consent_to_marketing: bool = Field(
@@ -160,21 +160,26 @@ class Role(BaseModel):
 
 # Define User Model
 class User(BaseModel):
+    id: Optional[str] = Field(default=None)
+    name: str
+    email: EmailStr
+    phone_number: PhoneNumberStr
     user_type: Optional[
         Literal["individual", "business_entity", "financial_institution"]
     ] = Field(default=["individual"], description="Type of the user")
-    email: EmailStr
     password: str = Field(
         ...,
         description="Password must be at least 8 characters long, with at least 1 capital letter and 1 special character",
         min_length=8,
     )
-    phone_number: PhoneNumberStr
-    name: str
+    # Legal compliance
+    legal_compliance: LegalCompliance = Field(
+        ..., description="Legal compliance information for the user"
+    )
     about: Optional[str] = None
     avatar_url: Optional[HttpUrl] = None
     # KYC data
-    kyc_data: Optional[KycData] = Field(..., description="KYC data for the user")
+    kyc_data: Optional[KycData] = Field(None, description="KYC data for the user")
 
     # Crypto wallets
     crypto_wallets: Optional[List[CryptoWallet]] = Field(
@@ -194,23 +199,19 @@ class User(BaseModel):
     trading_limits: Optional[float] = Field(
         default=0.0, description="User's trading limits"
     )
-    fees: Optional[Fees]
+    fees: Optional[Fees] = Field(None, description="Fees associated with the user")
     # Security settings
     two_factor_enabled: bool = Field(default=False, description="Is 2FA enabled?")
     two_factor_method: Optional[str] = Field(
         default=None, description="2FA method (sms, authenticator, email)"
     )
-    login_attempts: int = Field(
+    login_attempts: Optional[int] = Field(
         default=0, description="Number of failed login attempts"
     )
     last_login: Optional[datetime] = Field(
         None, description="Date and time of the last login"
     )
 
-    # Legal compliance
-    legal_compliance: LegalCompliance = Field(
-        ..., description="Legal compliance information for the user"
-    )
     ai_trading_enabled: bool = Field(
         default=False, description="Is AI/Algo trading enabled for the user?"
     )

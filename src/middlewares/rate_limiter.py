@@ -44,4 +44,4 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
     async def close(self):
         """Close Redis connection pool gracefully when shutting down."""
         if self.redis is not None:
-            self.redis.close()
+            await self.redis.close()

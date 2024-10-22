@@ -1,3 +1,4 @@
+import jwt
 from typing import List
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
@@ -20,6 +21,7 @@ from src.services.auth_service import (
     add_user_collection,
     authenticate_email,
     authenticate_otp,
+    create_access_token,
     disable_two_factor,
     enable_two_factor,
     get_user_by_id,
@@ -29,9 +31,11 @@ from src.services.auth_service import (
 from src.services.email_service import send_email
 from src.utils import has_role
 from src.utils.config import Config
+from src.utils.logger import setup_logger
 from src.utils.mongo_utils import get_db
 
 router = APIRouter()
+logger = setup_logger("auth_router", "logs/auth_router.log")
 
 
 @router.post("/register", status_code=status.HTTP_200_OK)
@@ -41,11 +45,67 @@ async def register(
     background_tasks: BackgroundTasks,
     db=Depends(get_db),
 ):
+    """
+    Registers a new user and sends a confirmation email.
+
+    This asynchronous function processes a user registration request by
+    adding the user to the database and sending a registration confirmation email.
+    It returns the response from the user addition operation or
+    raises an error if the registration fails.
+
+    Args:
+        request (Request): The HTTP request object containing user registration details.
+        user (User): The user object containing the information of the user to be registered.
+        background_tasks (BackgroundTasks): Background tasks to be executed after the response is sent.
+        db: The database dependency for managing user data.
+
+    Returns:
+        dict: The response from the user addition operation.
+
+    Raises:
+        HTTPException: If a value error occurs during the registration process.
+    """
+
     try:
-        await add_user(user, db=db)
+        response = await add_user(user, db=db)
         send_register_email(request, background_tasks, user)
+        return response
     except ValueError as e:
+        print(e)
         raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/refresh")
+async def refresh_token_router(request: Request):
+    """
+    Generates a new access token for an authenticated user.
+
+    This asynchronous function processes a request to refresh
+    the user's access token. It checks if the user is valid and,
+    if so, creates a new access token using the user's information,
+    returning the new token along with its type.
+
+    Args:
+        request (Request): The HTTP request object containing user information.
+
+    Returns:
+        dict: A dictionary containing the new access token and its type.
+
+    Raises:
+        HTTPException: If the user is invalid or if an error
+        occurs during the token generation process.
+    """
+
+    try:
+        user = request.state.user
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid user")
+        token_data = {"sub": str(user["_id"]), "email": user["email"]}
+        new_access_token = await create_access_token(data=token_data)
+        return {"access_token": new_access_token, "token_type": "bearer"}
+
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=str(e)) from e
 
 
 @router.post("/login", status_code=status.HTTP_200_OK)
@@ -94,9 +154,10 @@ async def login(
             user = await authenticate_otp(
                 login_model.user_name, login_model.password, db
             )
-        send_login_email(request, background_tasks, user)
+        send_login_email(request, background_tasks, user["profile"])
         return user
-    except ValueError as e:
+    except Exception as e:
+        print(e)
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
@@ -383,48 +444,60 @@ async def add_user_wallet(user_id: str, wallet: CryptoWallet, db=Depends(get_db)
 
 
 def send_login_email(request, background_tasks, user):
-    if user and user.email:
-        ip_address = request.client.host
-        email = EmailModel(
-            from_email=user.email,
-            template_id=Config.LOGIN_EMAIL_TEMPLATE_ID,
-            subject=f"{Config.BRAND_NAME} - Login Confirmation",
-            plain_text_content=(
-                f"Dear {user.name},\n\n"
-                f"You have successfully logged in to your {Config.BRAND_NAME} account from IP address: {ip_address}.\n\n"
-                "If this wasn't you, please contact our support team immediately.\n\n"
-                "Best regards,\n"
-                f"The {Config.BRAND_NAME} Team"
-            ),
-            html_content=(
-                f"<p>Dear {user.name},</p>"
-                f"<p>You have successfully logged in to your <strong>{Config.BRAND_NAME}</strong> account from IP address: <strong>{ip_address}</strong>.</p>"
-                f"<p>If this wasn't you, please contact our support team immediately.</p>"
-                f"<p>Best regards,<br/>The <strong>{Config.BRAND_NAME}</strong> Team</p>"
-            ),
-        )
-        background_tasks.add_task(send_email, email)
+    try:
+        if user and user["email"]:
+            ip_address = request.client.host
+            name = user["name"]
+            email = EmailModel(
+                from_email=Config.FROM_EMAIL,
+                to=user["email"],
+                template_id=Config.LOGIN_EMAIL_TEMPLATE_ID,
+                subject=f"{Config.BRAND_NAME} - Login Confirmation",
+                plain_text_content=(
+                    f"Dear {name},\n\n"
+                    f"You have successfully logged in to your {Config.BRAND_NAME} account from IP address: {ip_address}.\n\n"
+                    "If this wasn't you, please contact our support team immediately.\n\n"
+                    "Best regards,\n"
+                    f"The {Config.BRAND_NAME} Team"
+                ),
+                html_content=(
+                    f"<p>Dear {name},</p>"
+                    f"<p>You have successfully logged in to your <strong>{Config.BRAND_NAME}</strong> account from IP address: <strong>{ip_address}</strong>.</p>"
+                    f"<p>If this wasn't you, please contact our support team immediately.</p>"
+                    f"<p>Best regards,<br/>The <strong>{Config.BRAND_NAME}</strong> Team</p>"
+                ),
+            )
+            background_tasks.add_task(send_email, email)
+    except Exception as e:
+        print(e)
+        logger.error(f"send_login_email {e}")
 
 
 def send_register_email(request, background_tasks, user):
-    if user and user.email:
-        ip_address = request.client.host
-        email = EmailModel(
-            from_email=user.email,
-            template_id=Config.REGISTRATION_EMAIL_TEMPLATE_ID,
-            subject=f"{Config.BRAND_NAME} Registration Confirmation",
-            plain_text_content=(
-                f"Dear {user.name},\n\n"
-                f"You have successfully registered to {Config.BRAND_NAME} from IP address: {ip_address}.\n\n"
-                "If this wasn't you, please contact our support team immediately.\n\n"
-                "Best regards,\n"
-                f"The {Config.BRAND_NAME} Team"
-            ),
-            html_content=(
-                f"<p>Dear {user.name},</p>"
-                f"<p>You have successfully registered to <strong>{Config.BRAND_NAME}</strong> from IP address: <strong>{ip_address}</strong>.</p>"
-                f"<p>If this wasn't you, please contact our support team immediately.</p>"
-                f"<p>Best regards,<br/>The <strong>{Config.BRAND_NAME}</strong> Team</p>"
-            ),
-        )
-        background_tasks.add_task(send_email, email)
+    try:
+        if user and user["email"]:
+            ip_address = request.client.host
+            name = user["name"]
+            email = EmailModel(
+                from_email=Config.FROM_EMAIL,
+                to=user["email"],
+                template_id=Config.REGISTRATION_EMAIL_TEMPLATE_ID,
+                subject=f"{Config.BRAND_NAME} Registration Confirmation",
+                plain_text_content=(
+                    f"Dear {name},\n\n"
+                    f"You have successfully registered to {Config.BRAND_NAME} from IP address: {ip_address}.\n\n"
+                    "If this wasn't you, please contact our support team immediately.\n\n"
+                    "Best regards,\n"
+                    f"The {Config.BRAND_NAME} Team"
+                ),
+                html_content=(
+                    f"<p>Dear {name},</p>"
+                    f"<p>You have successfully registered to <strong>{Config.BRAND_NAME}</strong> from IP address: <strong>{ip_address}</strong>.</p>"
+                    f"<p>If this wasn't you, please contact our support team immediately.</p>"
+                    f"<p>Best regards,<br/>The <strong>{Config.BRAND_NAME}</strong> Team</p>"
+                ),
+            )
+            background_tasks.add_task(send_email, email)
+    except Exception as e:
+        print(e)
+        logger.error(f"send_register_email {e}")

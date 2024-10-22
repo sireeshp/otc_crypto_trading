@@ -29,3 +29,7 @@ def get_users_collection(db: AsyncIOMotorDatabase) -> Collection:
 
 def get_fees_collection(db: AsyncIOMotorDatabase) -> Collection:
     return db.get_collection("fees")
+
+
+def get_api_keys_collection(db: AsyncIOMotorDatabase) -> Collection:
+    return db.get_collection("api_keys")

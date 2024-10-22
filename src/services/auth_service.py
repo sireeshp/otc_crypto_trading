@@ -22,11 +22,20 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def verify_password(plain_password, hashed_password):
+    print(hashed_password)
     return pwd_context.verify(plain_password, hashed_password)
 
 
 def get_password_hash(password):
     return pwd_context.hash(password)
+
+
+async def create_access_token(data: dict):
+    to_encode = data.copy()
+    expires_delta = timedelta(minutes=int(Config.ACCESS_TOKEN_EXPIRE_MINUTES))
+    expire = datetime.now(timezone.utc) + expires_delta
+    to_encode["exp"] = expire
+    return jwt.encode(to_encode, Config.AUTH_SECURITY_KEY, algorithm=Config.ALGORITHM)
 
 
 async def find_user(email: str, phone_number: str, db):
@@ -41,19 +50,54 @@ async def find_user(email: str, phone_number: str, db):
     )
 
 
-async def add_user(user: User, db):
-    db_user = find_user(user.email, user.phone_number, db)
-    if db_user is not None:
-        raise ValueError("User already exist")
-    if user.password is None:
-        user.password = Config.DEFAULT_PASSWORD
-    user.password = get_password_hash(user.password)
+def get_user_vm(user: User):
+    return {
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "phone_number": user.phone_number,
+        "user_type": user.user_type,
+        "about": user.about,
+        "avatar_url": user.avatar_url,
+        "user_tier": user.user_tier,
+        "two_factor_enabled": user.two_factor_enabled,
+        "two_factor_method": user.two_factor_method,
+        "login_attempts": user.login_attempts,
+        "last_login": user.last_login,
+        "ai_trading_enabled": user.ai_trading_enabled,
+        "trading_limits": user.trading_limits,
+        "legal_compliance": user.legal_compliance,
+        "trading_products": user.trading_products,
+        "roles": user.roles,
+        "data_store_preference": user.data_store_preference,
+    }
+
+
+async def delete_user(user_id: str, db):
     user_collection = get_users_collection(db=db)
-    saved_user = await user_collection.insert_one(user, upsert=True)
-    saved_user.pop("password", None)
-    token_data = {"sub": str(saved_user["_id"]), "email": saved_user["email"]}
-    token = await create_access_token(data=token_data)
-    return {"token": token, "profile": saved_user}
+    return await user_collection.delete_one({"_id": ObjectId(user_id)})
+
+
+async def add_user(user: User, db):
+    try:
+        db_user = await find_user(user.email, user.phone_number, db)
+        if db_user is not None:
+            raise ValueError("User already exist")
+        if user.password is None:
+            user.password = Config.DEFAULT_PASSWORD
+        user.password = get_password_hash(user.password)
+        user_collection = get_users_collection(db=db)
+        user_data = user.model_dump()
+        response = await user_collection.insert_one(user_data)
+        user.id = str(response.inserted_id)
+        profile = get_user_vm(user)
+        token_data = {"sub": profile["id"], "email": profile["email"]}
+        token = await create_access_token(data=token_data)
+        return {"token": token, "profile": profile}
+    except Exception as e:
+        print(e)
+        logger.error(f"add_user: {str(e)}")
+        raise ValueError(e) from e
 
 
 async def add_user_collection(users: List[User], db):
@@ -83,11 +127,11 @@ async def add_user_collection(users: List[User], db):
     except BulkWriteError as bwe:
         # Handle any bulk write errors
         logger.error(f"Bulk write error occurred: {bwe.details}")
-        return {"status": "failed", "error": bwe.details}
+        raise ValueError({"status": "failed", "error": bwe.details}) from e
     except Exception as e:
         # Catch any other exceptions
         logger.error(f"An error occurred during insert_many: {str(e)}")
-        return {"status": "failed", "error": str(e)}
+        raise ValueError({"status": "failed", "error": str(e)}) from e
 
 
 async def update_user(user_id: str, update_data: dict, db) -> User:
@@ -157,33 +201,23 @@ async def disable_two_factor(user_id: str, db) -> User:
         raise ValueError(e) from e
 
 
-async def create_access_token(data: dict, expires_delta: timedelta = None):
-    to_encode = data.copy()
-    expire = (
-        datetime.utcnow(timezone.utc) + expires_delta
-        if expires_delta
-        else datetime.utcnow(timezone.utc) + timedelta(minutes=Config.ACCESS_TOKEN_EXPIRE_MINUTES)
-    )
-    to_encode["exp"] = expire
-    return jwt.encode(to_encode, Config.AUTH_SECURITY_KEY, algorithm=Config.ALGORITHM)
-
-
 async def authenticate_email(email: str, password: str, db) -> Union[dict, None]:
     try:
         user_collection: Collection = get_users_collection(db)
-        user: Union[User, None] = await user_collection({"email": email})
-        if not user:
+        response: Union[User, None] = await user_collection.find_one({"email": email})
+        if not response:
             raise ValueError("User not registered, please register.")
 
-        is_valid = verify_password(password, user["password"])
+        is_valid = verify_password(password, response["password"])
         if not is_valid:
             raise ValueError("Invalid Password")
-
-        user.pop("password", None)
-        token_data = {"sub": str(user["_id"]), "email": user["email"]}
+        response["id"] = str(response["_id"])
+        profile = get_user_vm(User(**response))
+        token_data = {"sub": profile["id"], "email": profile["email"]}
         token = await create_access_token(data=token_data)
-        return {"token": token, "profile": user}
+        return {"token": token, "profile": profile}
     except Exception as e:
+        print(e)
         logger.error(f"Error during authentication: {e}")
         raise ValueError(e) from e
 
